@@ -18,6 +18,7 @@ sys.path.append(os.path.join(ROOT_DIR, 'pointnet2'))
 
 from pointnet2_modules import PointnetSAModuleVotes, PointnetFPModule
 
+
 class Pointnet2Backbone(nn.Module):
     r"""
        Backbone network for point cloud feature learning.
@@ -29,14 +30,14 @@ class Pointnet2Backbone(nn.Module):
             Number of input channels in the feature descriptor for each point.
             e.g. 3 for RGB.
     """
-    def __init__(self, input_feature_dim=0):
+    def __init__(self, input_feature_dim=0, SCALE=1):
         super().__init__()
-
+        
         self.sa1 = PointnetSAModuleVotes(
                 npoint=2048,
                 radius=0.2,
                 nsample=64,
-                mlp=[input_feature_dim, 64, 64, 128],
+                mlp=[0, 64*SCALE, 64*SCALE, 128*SCALE],
                 use_xyz=True,
                 normalize_xyz=True
             )
@@ -45,7 +46,7 @@ class Pointnet2Backbone(nn.Module):
                 npoint=1024,
                 radius=0.4,
                 nsample=32,
-                mlp=[128, 128, 128, 256],
+                mlp=[128*SCALE, 128*SCALE, 128*SCALE, 256*SCALE],
                 use_xyz=True,
                 normalize_xyz=True
             )
@@ -54,7 +55,7 @@ class Pointnet2Backbone(nn.Module):
                 npoint=512,
                 radius=0.8,
                 nsample=16,
-                mlp=[256, 128, 128, 256],
+                mlp=[256*SCALE, 128*SCALE, 128*SCALE, 256*SCALE],
                 use_xyz=True,
                 normalize_xyz=True
             )
@@ -63,14 +64,18 @@ class Pointnet2Backbone(nn.Module):
                 npoint=256,
                 radius=1.2,
                 nsample=16,
-                mlp=[256, 128, 128, 256],
+                mlp=[256*SCALE, 128*SCALE, 128*SCALE, 256*SCALE],
                 use_xyz=True,
                 normalize_xyz=True
             )
 
-        self.fp1 = PointnetFPModule(mlp=[256+256,256,256])
-        self.fp2 = PointnetFPModule(mlp=[256+256,256,256])
-
+        if SCALE == 1:
+            self.fp1 = PointnetFPModule(mlp=[256+256,512,512])
+            self.fp2 = PointnetFPModule(mlp=[512+256,512,512])
+        else:
+            self.fp1 = PointnetFPModule(mlp=[256*SCALE+256*SCALE,256*SCALE,256*SCALE])
+            self.fp2 = PointnetFPModule(mlp=[256*SCALE+256*SCALE,256*SCALE,256*SCALE])
+        
     def _break_up_pc(self, pc):
         xyz = pc[..., 0:3].contiguous()
         features = (
@@ -130,6 +135,7 @@ class Pointnet2Backbone(nn.Module):
         end_points['fp2_xyz'] = end_points['sa2_xyz']
         num_seed = end_points['fp2_xyz'].shape[1]
         end_points['fp2_inds'] = end_points['sa1_inds'][:,0:num_seed] # indices among the entire input point clouds
+
         return end_points
 
 

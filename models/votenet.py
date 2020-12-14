@@ -16,6 +16,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(BASE_DIR)
+
 from backbone_module import Pointnet2Backbone
 from voting_module import VotingModule
 from proposal_module import ProposalModule
@@ -43,7 +44,7 @@ class VoteNet(nn.Module):
     """
 
     def __init__(self, num_class, num_heading_bin, num_size_cluster, mean_size_arr,
-        input_feature_dim=0, num_proposal=128, vote_factor=1, sampling='vote_fps'):
+                 input_feature_dim=0, num_proposal=128, vote_factor=1, sampling='vote_fps', scale=1):
         super().__init__()
 
         self.num_class = num_class
@@ -57,15 +58,22 @@ class VoteNet(nn.Module):
         self.sampling=sampling
 
         # Backbone point feature learning
-        self.backbone_net = Pointnet2Backbone(input_feature_dim=self.input_feature_dim)
+        self.backbone_net = Pointnet2Backbone(input_feature_dim=self.input_feature_dim, SCALE=scale)
 
         # Hough voting
-        self.vgen = VotingModule(self.vote_factor, 256)
+        if scale <= 2:
+            self.vgen = VotingModule(self.vote_factor, 512)
+        else:
+            self.vgen = VotingModule(self.vote_factor, 256*scale)
 
         # Vote aggregation and detection
-        self.pnet = ProposalModule(num_class, num_heading_bin, num_size_cluster,
-            mean_size_arr, num_proposal, sampling)
-
+        if scale <= 2:
+            self.pnet = ProposalModule(num_class, num_heading_bin, num_size_cluster,
+                                       mean_size_arr, num_proposal, sampling, seed_feat_dim=512)
+        else:
+            self.pnet = ProposalModule(num_class, num_heading_bin, num_size_cluster,
+                                       mean_size_arr, num_proposal, sampling, seed_feat_dim=256*scale)
+            
     def forward(self, inputs):
         """ Forward pass of the network
 

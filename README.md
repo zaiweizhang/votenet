@@ -4,11 +4,9 @@ Created by <a href="http://charlesrqi.com" target="_blank">Charles R. Qi</a>, <a
 ![teaser](https://github.com/facebookresearch/votenet/blob/master/doc/teaser.jpg)
 
 ## Introduction
-This repository is code release for our ICCV 2019 paper (arXiv report [here](https://arxiv.org/pdf/1904.09664.pdf)).
+This repository is code release for ICCV 2019 paper (arXiv report [here](https://arxiv.org/pdf/1904.09664.pdf)), and also the finetuning code for the paper DepthContrast (paper link here).
 
-Current 3D object detection methods are heavily influenced by 2D detectors. In order to leverage architectures in 2D detectors, they often convert 3D point clouds to regular grids (i.e., to voxel grids or to bird’s eye view images), or rely on detection in 2D images to propose 3D boxes. Few works have attempted to directly detect objects in point clouds. In this work, we return to first principles to construct a 3D detection pipeline for point cloud data and as generic as possible. However, due to the sparse nature of the data – samples from 2D manifolds in 3D space – we face a major challenge when directly predicting bounding box parameters from scene points: a 3D object centroid can be far from any surface point thus hard to regress accurately in one step. To address the challenge, we propose VoteNet, an end-to-end 3D object detection network based on a synergy of deep point set networks and Hough voting. Our model achieves state-of-the-art 3D detection on two large datasets of real 3D scans, ScanNet and SUN RGB-D with a simple design, compact model size and high efficiency. Remarkably, VoteNet outperforms previous methods by using purely geometric information without relying on color images.
-
-In this repository, we provide VoteNet model implementation (with Pytorch) as well as data preparation, training and evaluation scripts on SUN RGB-D and ScanNet.
+In this repository, we provide VoteNet model implementation (with Pytorch) as well as data preparation, training, finetuning and evaluation scripts on SUN RGB-D and ScanNet.
 
 ## Citation
 
@@ -20,6 +18,8 @@ If you find our work useful in your research, please consider citing:
         booktitle = {Proceedings of the IEEE International Conference on Computer Vision},
         year = {2019}
     }
+
+Add our paper link here:
 
 ## Installation
 
@@ -72,6 +72,12 @@ To train a new VoteNet model on SUN RGB-D data (depth images):
 You can use `CUDA_VISIBLE_DEVICES=0,1,2` to specify which GPU(s) to use. Without specifying CUDA devices, the training will use all the available GPUs and train with data parallel (Note that due to I/O load, training speedup is not linear to the nubmer of GPUs used). Run `python train.py -h` to see more training options (e.g. you can also set `--model boxnet` to train with the baseline BoxNet model).
 While training you can check the `log_sunrgbd/log_train.txt` file on its progress, or use the TensorBoard to see loss curves.
 
+For finetuning with our pretrained model:
+
+    CUDA_VISIBLE_DEVICES=0 python train.py --dataset sunrgbd --log_dir log_sunrgbd --no_height --pre_checkpoint_path /path/to/pretrained_model --batch_size 16
+
+You can also specify the scan_idx for limited label training experiments and specify the scale parameter for 1x, 2x, 3x or 4x pointnet finetuning. The sampled indexes used in our experiments have been uploaded to sunrgbd/meta_data.
+
 To test the trained model with its checkpoint:
 
     python eval.py --dataset sunrgbd --checkpoint_path log_sunrgbd/checkpoint.tar --dump_dir eval_sunrgbd --cluster_sampling seed_fps --use_3d_nms --use_cls_nms --per_class_proposal
@@ -84,6 +90,12 @@ Final evaluation results will be printed on screen and also written in the `log_
 To train a VoteNet model on Scannet data (fused scan):
 
     CUDA_VISIBLE_DEVICES=0 python train.py --dataset scannet --log_dir log_scannet --num_point 40000
+
+For finetuning with our pretrained model:
+
+    CUDA_VISIBLE_DEVICES=0 python train.py --dataset scannet --log_dir log_scannet --no_height --pre_checkpoint_path /path/to/pretrained_model --batch_size 8
+
+You can also specify the scan_idx for limited label training experiments and specify the scale parameter for 1x, 2x, 3x or 4x pointnet finetuning. The sampled indexes used in our experiments have been uploaded to scannet/meta_data.
 
 To test the trained model with its checkpoint:
 

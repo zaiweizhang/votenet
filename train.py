@@ -39,6 +39,8 @@ from pytorch_utils import BNMomentumScheduler
 from tf_visualizer import Visualizer as TfVisualizer
 from ap_helper import APCalculator, parse_predictions, parse_groundtruths
 
+from checkpoint import init_model_from_weights
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', default='votenet', help='Model file name [default: votenet]')
 parser.add_argument('--dataset', default='sunrgbd', help='Dataset name. sunrgbd or scannet. [default: sunrgbd]')
@@ -63,6 +65,9 @@ parser.add_argument('--use_color', action='store_true', help='Use RGB color in i
 parser.add_argument('--use_sunrgbd_v2', action='store_true', help='Use V2 box labels for SUN RGB-D dataset')
 parser.add_argument('--overwrite', action='store_true', help='Overwrite existing log and dump folders.')
 parser.add_argument('--dump_results', action='store_true', help='Dump results.')
+parser.add_argument('--scan_idx', default='None', help='Training split index [default: log]')
+parser.add_argument('--scale', type=int, default=1, help='Backbone scale [default: 1]')
+parser.add_argument('--pre_checkpoint_path', default=None, help='Model pretrained weight path [default: None]')
 FLAGS = parser.parse_args()
 
 # ------------------------------------------------------------------------- GLOBAL CONFIG BEG
@@ -81,6 +86,7 @@ DUMP_DIR = FLAGS.dump_dir if FLAGS.dump_dir is not None else DEFAULT_DUMP_DIR
 DEFAULT_CHECKPOINT_PATH = os.path.join(LOG_DIR, 'checkpoint.tar')
 CHECKPOINT_PATH = FLAGS.checkpoint_path if FLAGS.checkpoint_path is not None \
     else DEFAULT_CHECKPOINT_PATH
+PRE_CHECKPOINT_PATH = FLAGS.pre_checkpoint_path
 FLAGS.DUMP_DIR = DUMP_DIR
 
 # Prepare LOG_DIR and DUMP_DIR
@@ -118,7 +124,7 @@ if FLAGS.dataset == 'sunrgbd':
     TRAIN_DATASET = SunrgbdDetectionVotesDataset('train', num_points=NUM_POINT,
         augment=True,
         use_color=FLAGS.use_color, use_height=(not FLAGS.no_height),
-        use_v1=(not FLAGS.use_sunrgbd_v2))
+        use_v1=(not FLAGS.use_sunrgbd_v2), scan_idx_list=FLAGS.scan_idx)
     TEST_DATASET = SunrgbdDetectionVotesDataset('val', num_points=NUM_POINT,
         augment=False,
         use_color=FLAGS.use_color, use_height=(not FLAGS.no_height),
@@ -130,10 +136,32 @@ elif FLAGS.dataset == 'scannet':
     DATASET_CONFIG = ScannetDatasetConfig()
     TRAIN_DATASET = ScannetDetectionDataset('train', num_points=NUM_POINT,
         augment=True,
-        use_color=FLAGS.use_color, use_height=(not FLAGS.no_height))
+        use_color=FLAGS.use_color, use_height=(not FLAGS.no_height), scan_idx_list=FLAGS.scan_idx)
     TEST_DATASET = ScannetDetectionDataset('val', num_points=NUM_POINT,
         augment=False,
         use_color=FLAGS.use_color, use_height=(not FLAGS.no_height))
+elif FLAGS.dataset == 'mp3d':
+    sys.path.append(os.path.join(ROOT_DIR, 'mp3d'))
+    from mp3d_detection_dataset import Mp3dDetectionDataset, MAX_NUM_OBJ
+    from model_util_mp3d import Mp3dDatasetConfig
+    DATASET_CONFIG = Mp3dDatasetConfig()
+    TRAIN_DATASET = Mp3dDetectionDataset('train', num_points=NUM_POINT,
+                                         augment=True,
+                                         use_color=FLAGS.use_color, use_height=(not FLAGS.no_height), scan_idx_list=FLAGS.scan_idx)
+    TEST_DATASET = Mp3dDetectionDataset('val', num_points=NUM_POINT,
+                                        augment=False,
+                                        use_color=FLAGS.use_color, use_height=(not FLAGS.no_height))
+elif FLAGS.dataset == 's3dis':
+    sys.path.append(os.path.join(ROOT_DIR, 's3dis'))
+    from s3dis_detection_dataset import S3disDetectionDataset, MAX_NUM_OBJ
+    from model_util_s3dis import S3disDatasetConfig
+    DATASET_CONFIG = S3disDatasetConfig()
+    TRAIN_DATASET = S3disDetectionDataset('train', num_points=NUM_POINT,
+                                          augment=True,
+                                          use_color=FLAGS.use_color, use_height=(not FLAGS.no_height), scan_idx_list=FLAGS.scan_idx)
+    TEST_DATASET = S3disDetectionDataset('val', num_points=NUM_POINT,
+                                         augment=False,
+                                         use_color=FLAGS.use_color, use_height=(not FLAGS.no_height))
 else:
     print('Unknown dataset %s. Exiting...'%(FLAGS.dataset))
     exit(-1)
@@ -161,7 +189,8 @@ net = Detector(num_class=DATASET_CONFIG.num_class,
                num_proposal=FLAGS.num_target,
                input_feature_dim=num_input_channel,
                vote_factor=FLAGS.vote_factor,
-               sampling=FLAGS.cluster_sampling)
+               sampling=FLAGS.cluster_sampling,
+               scale=FLAGS.scale)
 
 if torch.cuda.device_count() > 1:
   log_string("Let's use %d GPUs!" % (torch.cuda.device_count()))
@@ -176,6 +205,10 @@ optimizer = optim.Adam(net.parameters(), lr=BASE_LEARNING_RATE, weight_decay=FLA
 # Load checkpoint if there is any
 it = -1 # for the initialize value of `LambdaLR` and `BNMomentumScheduler`
 start_epoch = 0
+if PRE_CHECKPOINT_PATH is not None and os.path.isfile(PRE_CHECKPOINT_PATH):
+    precheckpoint = torch.load(PRE_CHECKPOINT_PATH)
+    init_model_from_weights(net, precheckpoint)
+    
 if CHECKPOINT_PATH is not None and os.path.isfile(CHECKPOINT_PATH):
     checkpoint = torch.load(CHECKPOINT_PATH)
     net.load_state_dict(checkpoint['model_state_dict'])
