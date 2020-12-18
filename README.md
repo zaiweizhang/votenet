@@ -59,13 +59,13 @@ Detection results will be dumped to `demo_files/scannet_results`.
 
 ### Data preparation
 
-For SUN RGB-D, follow the [README](https://github.com/facebookresearch/votenet/blob/master/sunrgbd/README.md) under the `sunrgbd` folder.
+For SUN RGB-D, follow the [README](https://github.com/zaiweizhang/votenet/blob/master/sunrgbd/README.md) under the `sunrgbd` folder.
 
-For ScanNet, follow the [README](https://github.com/facebookresearch/votenet/blob/master/scannet/README.md) under the `scannet` folder.
+For ScanNet, follow the [README](https://github.com/zaiweizhang/votenet/blob/master/scannet/README.md) under the `scannet` folder.
 
-For Matterport3D, follow the [README](https://github.com/facebookresearch/votenet/blob/master/mp3d/README.md) under the `mp3d` folder.
+For Matterport3D, follow the [README](https://github.com/zaiweizhang/votenet/blob/master/mp3d/README.md) under the `mp3d` folder.
 
-For S3DIS, follow the [README](https://github.com/facebookresearch/votenet/blob/master/s3dis/README.md) under the `s3dis` folder.
+For S3DIS, follow the [README](https://github.com/zaiweizhang/votenet/blob/master/s3dis/README.md) under the `s3dis` folder.
 
 ### Train and test on SUN RGB-D
 
