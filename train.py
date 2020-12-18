@@ -192,16 +192,6 @@ net = Detector(num_class=DATASET_CONFIG.num_class,
                sampling=FLAGS.cluster_sampling,
                scale=FLAGS.scale)
 
-if torch.cuda.device_count() > 1:
-  log_string("Let's use %d GPUs!" % (torch.cuda.device_count()))
-  # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-  net = nn.DataParallel(net)
-net.to(device)
-criterion = MODEL.get_loss
-
-# Load the Adam optimizer
-optimizer = optim.Adam(net.parameters(), lr=BASE_LEARNING_RATE, weight_decay=FLAGS.weight_decay)
-
 # Load checkpoint if there is any
 it = -1 # for the initialize value of `LambdaLR` and `BNMomentumScheduler`
 start_epoch = 0
@@ -212,9 +202,22 @@ if PRE_CHECKPOINT_PATH is not None and os.path.isfile(PRE_CHECKPOINT_PATH):
 if CHECKPOINT_PATH is not None and os.path.isfile(CHECKPOINT_PATH):
     checkpoint = torch.load(CHECKPOINT_PATH)
     net.load_state_dict(checkpoint['model_state_dict'])
+    ### Careful with loading optimizer parameter
+    ### May need to move this block later
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     start_epoch = checkpoint['epoch']
     log_string("-> loaded checkpoint %s (epoch: %d)"%(CHECKPOINT_PATH, start_epoch))
+
+if torch.cuda.device_count() > 1:
+  log_string("Let's use %d GPUs!" % (torch.cuda.device_count()))
+  # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+  net = nn.DataParallel(net)
+net.to(device)
+
+criterion = MODEL.get_loss
+
+# Load the Adam optimizer
+optimizer = optim.Adam(net.parameters(), lr=BASE_LEARNING_RATE, weight_decay=FLAGS.weight_decay)
 
 # Decay Batchnorm momentum from 0.5 to 0.999
 # note: pytorch's BN momentum (default 0.1)= 1 - tensorflow's BN momentum

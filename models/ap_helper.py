@@ -261,7 +261,12 @@ class APCalculator(object):
         for key in sorted(ap.keys()):
             clsname = self.class2type_map[key] if self.class2type_map else str(key)
             ret_dict['%s Average Precision'%(clsname)] = ap[key]
-        ret_dict['mAP'] = np.mean(list(ap.values()))
+        temp = []
+        for v in list(ap.values()):
+            if np.isnan(v):
+                continue
+            temp.append(v)
+        ret_dict['mAP'] = np.mean(temp)
         rec_list = []
         for key in sorted(ap.keys()):
             clsname = self.class2type_map[key] if self.class2type_map else str(key)
@@ -271,7 +276,12 @@ class APCalculator(object):
             except:
                 ret_dict['%s Recall'%(clsname)] = 0
                 rec_list.append(0)
-        ret_dict['AR'] = np.mean(rec_list)
+        temp = []
+        for v in rec_list:
+            if np.isnan(v):
+                continue
+            temp.append(v)
+        ret_dict['AR'] = np.mean(temp)
         return ret_dict
 
     def reset(self):

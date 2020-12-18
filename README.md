@@ -63,6 +63,10 @@ For SUN RGB-D, follow the [README](https://github.com/facebookresearch/votenet/b
 
 For ScanNet, follow the [README](https://github.com/facebookresearch/votenet/blob/master/scannet/README.md) under the `scannet` folder.
 
+For Matterport3D, follow the [README](https://github.com/facebookresearch/votenet/blob/master/mp3d/README.md) under the `mp3d` folder.
+
+For S3DIS, follow the [README](https://github.com/facebookresearch/votenet/blob/master/s3dis/README.md) under the `s3dis` folder.
+
 ### Train and test on SUN RGB-D
 
 To train a new VoteNet model on SUN RGB-D data (depth images):
@@ -103,12 +107,25 @@ To test the trained model with its checkpoint:
 
 Example results will be dumped in the `eval_scannet` folder (or any other folder you specify). In default we evaluate with both AP@0.25 and AP@0.5 with 3D IoU on axis aligned boxes. A properly trained VoteNet should have around 58 mAP@0.25 and 35 mAP@0.5.
 
+### Train and test on Matterport3D and Stanford3D
+
+Matterport3D and Stanford3D are very similar compared to ScanNet.
+
+To train a VoteNet model on Matterport3D and Stanford3D (fused scan):
+
+    CUDA_VISIBLE_DEVICES=0 python train.py --dataset mp3d/s3dis --log_dir log
+
+For finetuning with our pretrained model:
+
+    CUDA_VISIBLE_DEVICES=0 python train.py --dataset mp3d/s3dis --log_dir log --no_height --pre_checkpoint_path /path/to/pretrained_model --batch_size 8
+
+You can also specify the scan_idx for limited label training experiments and specify the scale parameter for 1x, 2x, 3x or 4x pointnet finetuning. The sampled indexes used in our experiments have been uploaded to dataset/meta_data.
+
+To test the trained model with its checkpoint, follow the samilar scripts compared to scannet.
+
 ### Train on your own data
 
 [For Pro Users] If you have your own dataset with point clouds and annotated 3D bounding boxes, you can create a new dataset class and train VoteNet on your own data. To ease the proces, some tips are provided in this [doc](https://github.com/facebookresearch/votenet/blob/master/doc/tips.md).
-
-## Acknowledgements
-We want to thank Erik Wijmans for his PointNet++ implementation in Pytorch ([original codebase](https://github.com/erikwijmans/Pointnet2_PyTorch)).
 
 ## License
 votenet is relased under the MIT License. See the [LICENSE file](https://arxiv.org/pdf/1904.09664.pdf) for more details.
