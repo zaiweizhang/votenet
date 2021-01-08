@@ -4,7 +4,7 @@ Created by <a href="http://charlesrqi.com" target="_blank">Charles R. Qi</a>, <a
 ![teaser](https://github.com/facebookresearch/votenet/blob/master/doc/teaser.jpg)
 
 ## Introduction
-This repository is code release for ICCV 2019 paper (arXiv report [here](https://arxiv.org/pdf/1904.09664.pdf)), and also the finetuning code for the paper DepthContrast (paper link here).
+This repository is code release for ICCV 2019 paper (arXiv report [here](https://arxiv.org/pdf/1904.09664.pdf)), and also the finetuning code for the paper [DepthContrast] (https://arxiv.org/abs/2101.02691).
 
 In this repository, we provide VoteNet model implementation (with Pytorch) as well as data preparation, training, finetuning and evaluation scripts on SUN RGB-D and ScanNet.
 
