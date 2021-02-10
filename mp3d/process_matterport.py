@@ -99,11 +99,18 @@ label_map = read_label_mapping(LABEL_MAP_FILE,
 
 
 for house_name in os.listdir(data_path):
+    if len(house_name) != 11:
+        continue
     for tmp_name in os.listdir(os.path.join(data_path, house_name,  'region_segmentations')):
         if not tmp_name.endswith('.ply'):
             continue
         region_name = tmp_name[:-4]
         print(house_name, region_name)
+        """
+        output_file = '{}/{}_{}'.format(out_path, house_name, region_name)
+        if os.path.exists(output_file+'_vert.npy'):
+            continue
+        """
         mesh_vertices = read_mesh_vertices_rgb(os.path.join(data_path,house_name, 'region_segmentations', region_name+'.ply'))
         fseg_filename = os.path.join(data_path, house_name, 'region_segmentations', region_name+'.fsegs.json')
         vseg_filename = os.path.join(data_path, house_name, 'region_segmentations', region_name+'.vsegs.json')
@@ -125,14 +132,20 @@ for house_name in os.listdir(data_path):
 
         label_ids = np.zeros(shape=(num_verts), dtype=np.uint32) # 0: unannotated
         object_id_to_label_id = {}
+        flag = 0
         for label, segs in label_to_segs.items():
-
+            if label not in label_map:
+                flag = 1
+                break
             label_id = label_map[label]
             for seg in segs:
                 if not seg in seg_to_verts.keys():
                     continue
                 verts = seg_to_verts[seg]
                 label_ids[verts] = label_id
+        if flag == 1:
+            print ("issues with", house_name, region_name)
+            continue
         instance_ids = np.zeros(shape=(num_verts), dtype=np.uint32) # 0: unannotated
         num_instances = len(np.unique(list(object_id_to_segs.keys())))
         for object_id, segs in object_id_to_segs.items():
